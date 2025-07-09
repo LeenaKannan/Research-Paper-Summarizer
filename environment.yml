@@ -1,0 +1,65 @@
+name: research-summarizer
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+
+  # Core web framework
+  - streamlit=1.28.0
+
+  # Database dependencies
+  - pymongo=4.5.0
+
+  # AI/ML dependencies
+  - transformers=4.30.2
+  - torchvision=0.15.2
+  - sentence-transformers=2.2.2
+  - scikit-learn=1.3.0
+  - numpy=1.24.3
+  - pandas=2.0.3
+
+  # Document processing
+  - pypdf2=3.0.1
+  - python-docx=0.8.11
+  - textract=1.6.5
+
+  # Search and embeddings
+  - elasticsearch=8.8.0
+  - faiss-cpu=1.7.4
+
+  # Security and authentication
+  - cryptography=41.0.1
+  - pyjwt=2.7.0
+
+  # Development and testing
+  - pytest=7.4.0
+  - black=23.3.0
+  - flake8=6.0.0
+
+  # General utilities
+  - requests=2.31.0
+  - python-dotenv=1.0.0
+  - pip=23.1.2
+
+  - pip:
+      # OpenAI API
+      - openai==0.27.8
+      # Semantic Scholar API
+      - semanticscholar==0.3.2
+      # Google Books API
+      - google-api-python-client==2.92.0
+      # Additional document processing
+      - pdf2image==1.16.3
+      - pytesseract==0.3.10
+      # Streamlit-MongoDB connector
+      - st-mongo-connection==0.1.0
+      # MongoDB Atlas support
+      - dnspython==2.4.2
+      # Streamlit components
+      - streamlit-chat==0.1.1
+      - streamlit-option-menu==0.3.6
+      # File upload handling
+      - streamlit-file-browser==0.1.0
+      - torch==2.0.1
+      - mongodb==7.0.0
