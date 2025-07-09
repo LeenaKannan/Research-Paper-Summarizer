@@ -43,23 +43,17 @@ dependencies:
   - pip=23.1.2
 
   - pip:
-      # OpenAI API
       - openai==0.27.8
       # Semantic Scholar API
       - semanticscholar==0.3.2
       # Google Books API
       - google-api-python-client==2.92.0
-      # Additional document processing
       - pdf2image==1.16.3
       - pytesseract==0.3.10
-      # Streamlit-MongoDB connector
       - st-mongo-connection==0.1.0
-      # MongoDB Atlas support
       - dnspython==2.4.2
-      # Streamlit components
       - streamlit-chat==0.1.1
       - streamlit-option-menu==0.3.6
-      # File upload handling
       - streamlit-file-browser==0.1.0
       - torch==2.0.1
       - mongodb==7.0.0
