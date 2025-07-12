@@ -9,7 +9,7 @@ from langchain.vectorstores import FAISS
 from langchain.chat_models import ChatOpenAI
 from langchain.memory import ConversationBufferMemory
 from langchain.chains import ConversationalRetrievalChain
-from htmlTemplates import css, bot_template, user_template
+#from htmlTemplates import css, bot_template, user_template
 from langchain.llms import HuggingFaceHub
 
 def get_pdf_text(pdf_docs):
@@ -97,7 +97,7 @@ def main():
     with col1:
         customize_length = st.selectbox("📏 Summary Length", ["Short", "Medium", "Detailed"])
     with col2:
-        summary_mode = st.selectbox("🛠️ Summary Mode", ["Extractive", "Abstractive"])
+        summary_mode = st.selectbox("🛠️ Summary Mode", ["Extractive", "Abstractive","Mixed"])
     with col3:
         section_choice = st.selectbox("📑 Section-wise Summary", ["Abstract", "Intro", "Method", "Conclusion", "References"])
     with col4:
