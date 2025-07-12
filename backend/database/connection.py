@@ -1,101 +1,153 @@
-import os
-import logging
-from typing import Optional, Dict, Any, List
+# backend/database/connection.py
+"""
+MongoDB connection manager.
+Handles database connections and provides database instances.
+"""
+
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
-from pymongo.errors import ConnectionFailure, DuplicateKeyError
-from bson import ObjectId
-import asyncio
-from datetime import datetime
+from pymongo.errors import ConnectionFailure
+from typing import Optional
+import logging
+from contextlib import asynccontextmanager
+
+from ..config.settings import settings
 
 logger = logging.getLogger(__name__)
 
+
 class DatabaseManager:
-    _instance: Optional['DatabaseManager'] = None
-    _client: Optional[AsyncIOMotorClient] = None
-    _database: Optional[AsyncIOMotorDatabase] = None
-
-    def __new__(cls):
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-        return cls._instance
-
-    async def connect(self):
-        """Initialize database connection"""
-        if self._client is None:
-            try:
-                mongodb_uri = os.getenv('MONGODB_URI')
-                if not mongodb_uri:
-                    raise ValueError("MONGODB_URI environment variable is required")
-                
-                self._client = AsyncIOMotorClient(mongodb_uri)
-                
-                # Test connection
-                await self._client.admin.command('ping')
-                logger.info("Successfully connected to MongoDB Atlas")
-                
-                db_name = os.getenv('MONGODB_DB_NAME', 'research_summarizer')
-                self._database = self._client[db_name]
-                
-                # Create indexes
-                await self._create_indexes()
-                
-            except ConnectionFailure as e:
-                logger.error(f"Failed to connect to MongoDB: {e}")
-                raise
-            except Exception as e:
-                logger.error(f"Database connection error: {e}")
-                raise
-
-    async def disconnect(self):
-        """Close database connection"""
-        if self._client:
-            self._client.close()
-            self._client = None
-            self._database = None
-            logger.info("Disconnected from MongoDB")
-
-    async def _create_indexes(self):
-        """Create database indexes for better performance"""
+    """Manages MongoDB connections and database operations."""
+    
+    def __init__(self):
+        self.client: Optional[AsyncIOMotorClient] = None
+        self.database: Optional[AsyncIOMotorDatabase] = None
+    
+    async def connect(self) -> None:
+        """
+        Establish connection to MongoDB.
+        Raises ConnectionFailure if unable to connect.
+        """
         try:
-            # Users collection indexes
-            await self._database.users.create_index("username", unique=True)
-            await self._database.users.create_index("email", unique=True)
-            await self._database.users.create_index("created_at")
+            self.client = AsyncIOMotorClient(
+                settings.mongodb_url,
+                maxPoolSize=10,
+                minPoolSize=1,
+                serverSelectionTimeoutMS=5000
+            )
             
-            # Documents collection indexes
-            await self._database.documents.create_index("user_id")
-            await self._database.documents.create_index("upload_date")
-            await self._database.documents.create_index("processing_status")
-            await self._database.documents.create_index([("title", "text"), ("content_text", "text")])
+            # Verify connection
+            await self.client.admin.command('ping')
             
-            # Summaries collection indexes
-            await self._database.summaries.create_index("document_id")
-            await self._database.summaries.create_index("user_id")
-            await self._database.summaries.create_index("created_at")
+            self.database = self.client[settings.mongodb_name]
+            logger.info(f"Connected to MongoDB: {settings.mongodb_name}")
             
-            # Recommendations collection indexes
-            await self._database.recommendations.create_index("document_id")
-            await self._database.recommendations.create_index("user_id")
-            await self._database.recommendations.create_index("similarity_score")
+            # Create indexes
+            await self._create_indexes()
             
-            # Sessions collection indexes
-            await self._database.sessions.create_index("user_id")
-            await self._database.sessions.create_index("session_token", unique=True)
-            await self._database.sessions.create_index("expires_at", expireAfterSeconds=0)
+        except ConnectionFailure as e:
+            logger.error(f"Failed to connect to MongoDB: {e}")
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error connecting to MongoDB: {e}")
+            raise
+    
+    async def disconnect(self) -> None:
+        """Close MongoDB connection."""
+        if self.client:
+            self.client.close()
+            logger.info("Disconnected from MongoDB")
+    
+    async def _create_indexes(self) -> None:
+        """Create database indexes for better performance."""
+        try:
+            # User indexes
+            await self.database.users.create_index("email", unique=True)
+            await self.database.users.create_index("username", unique=True)
+            
+            # Document indexes
+            await self.database.documents.create_index("user_id")
+            await self.database.documents.create_index("upload_date")
+            await self.database.documents.create_index([("title", "text"), ("content", "text")])
+            
+            # Summary indexes
+            await self.database.summaries.create_index("document_id")
+            await self.database.summaries.create_index("user_id")
+            await self.database.summaries.create_index("created_at")
+            
+            # Session indexes
+            await self.database.sessions.create_index("user_id")
+            await self.database.sessions.create_index("expires_at", expireAfterSeconds=0)
             
             logger.info("Database indexes created successfully")
             
         except Exception as e:
             logger.error(f"Error creating indexes: {e}")
-
-    @property
-    def database(self) -> AsyncIOMotorDatabase:
-        if self._database is None:
-            raise RuntimeError("Database not connected. Call connect() first.")
-        return self._database
-
+            raise
+    
     def get_collection(self, collection_name: str):
+        """Get a specific collection from the database."""
+        if not self.database:
+            raise RuntimeError("Database not connected")
         return self.database[collection_name]
+    
+    @property
+    def users_collection(self):
+        """Get users collection."""
+        return self.get_collection("users")
+    
+    @property
+    def documents_collection(self):
+        """Get documents collection."""
+        return self.get_collection("documents")
+    
+    @property
+    def summaries_collection(self):
+        """Get summaries collection."""
+        return self.get_collection("summaries")
+    
+    @property
+    def sessions_collection(self):
+        """Get sessions collection."""
+        return self.get_collection("sessions")
+
 
 # Global database manager instance
 db_manager = DatabaseManager()
+
+
+@asynccontextmanager
+async def get_database():
+    """
+    Async context manager for database operations.
+    Ensures proper connection handling.
+    """
+    if not db_manager.database:
+        await db_manager.connect()
+    
+    try:
+        yield db_manager
+    finally:
+        # Connection is kept alive for the application lifetime
+        pass
+
+
+# Helper functions for direct access
+async def get_users_collection():
+    """Get users collection directly."""
+    if not db_manager.database:
+        await db_manager.connect()
+    return db_manager.users_collection
+
+
+async def get_documents_collection():
+    """Get documents collection directly."""
+    if not db_manager.database:
+        await db_manager.connect()
+    return db_manager.documents_collection
+
+
+async def get_summaries_collection():
+    """Get summaries collection directly."""
+    if not db_manager.database:
+        await db_manager.connect()
+    return db_manager.summaries_collection
