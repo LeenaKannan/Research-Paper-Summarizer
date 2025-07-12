@@ -3,14 +3,12 @@ from bson import ObjectId
 from datetime import datetime, timedelta
 from pymongo.errors import DuplicateKeyError
 import logging
-from .database import db_manager
 from models.schemas import UserSchema, DocumentSchema, SummarySchema, RecommendationSchema, SessionSchema
 
 logger = logging.getLogger(__name__)
 
 class CRUDOperations:
-    def __init__(self):
-        self.db = db_manager
+
 
     # User CRUD Operations
     async def create_user(self, user_data: Dict[str, Any]) -> Optional[str]:
