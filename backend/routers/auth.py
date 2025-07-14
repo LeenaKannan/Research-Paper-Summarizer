@@ -14,8 +14,7 @@ from ..models.user import (
     PasswordReset, PasswordResetConfirm
 )
 from ..services.user_service import user_service
-from ..services.email_service import email_service  # You'll need to create this
-
+# from ..services.email_service import email_service  
 logger = logging.getLogger(__name__)
 
 router = APIRouter(
@@ -50,9 +49,6 @@ async def register(user_data: UserCreate):
     """
     try:
         user = await user_service.register_user(user_data)
-        
-        # Send welcome email (optional)
-        # await email_service.send_welcome_email(user.email, user.username)
         
         return UserResponse(
             id=user.id,
