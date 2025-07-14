@@ -32,13 +32,13 @@ class Settings(BaseSettings):
     refresh_token_expire_days: int = 7
     
     # OpenAI Settings
-    openai_api_key: str = ""
-    openai_model: str = "gpt-4"
+    openai_api_key: str = "" #get from .env
+    openai_model: str = "gpt-4o-mini"
     openai_max_tokens: int = 2000
     openai_temperature: float = 0.7
     
     # File Upload Settings
-    max_upload_size: int = 10 * 1024 * 1024  # 10MB
+    max_upload_size: int = 200 * 1024 * 1024  # 200MB
     allowed_extensions: set = {".pdf", ".docx", ".txt"}
     upload_folder: str = "uploads"
     
@@ -50,7 +50,7 @@ class Settings(BaseSettings):
     rate_limit_period: int = 3600  # 1 hour in seconds
     
     # Semantic Scholar API
-    semantic_scholar_api_key: Optional[str] = None
+    # semantic_scholar_api_key: Optional[str] = None
     
     # Redis Settings (for caching)
     redis_url: Optional[str] = "redis://localhost:6379"
